@@ -164,64 +164,66 @@ saver = tf.train.Saver()
 
 
 #! Training ====================================================================
-# with tf.Session() as sess:
-#     sess.run(init) # initialize
-#     saver.restore(sess, "cnn.ckpt-19")  # load saved model: choose the most 
-#                                         # accurate one
-#     # if use TensorFlow implemented one-hot encoding, we need to convert its
-#     # type to numpy.array
-#     train_labels = train_labels.eval()
-#     valid_labels = valid_labels.eval()
-#     # run mini batch SGD
-#     for epoch in range(1,21,1): # run for 20 loops
-#         for batch in range(n_batch):
-#             # get data batch by batch
-#             batch_x = train_images[batch * BATCH_SIZE : (batch+1) * BATCH_SIZE]
-#             batch_y = train_labels[batch * BATCH_SIZE : (batch+1) * BATCH_SIZE]
-#             # train model
-#             sess.run(train_step, feed_dict={x:batch_x, y:batch_y,
-#                      keep_prob:0.5})
+with tf.Session() as sess:
+    sess.run(init) # initialize
+    saver.restore(sess, "cnn.ckpt-BEST") # load saved model: choose the most 
+                                         # accurate one
+    # if use TensorFlow implemented one-hot encoding, we need to convert its
+    # type to numpy.array
+    train_labels = train_labels.eval()
+    valid_labels = valid_labels.eval()
     
-#         # show accuracy for every epoch
-#         loss_epoch = sess.run(loss, feed_dict={x: valid_images,
-#                                                y: valid_labels,
-#                                                keep_prob: 0.5})
-#         accuracy_epoch = sess.run(accuracy, feed_dict={x:valid_images,
-#                                                        y:valid_labels,
-#                                                        keep_prob: 0.5})
-#         print("Epoch {}: accuracy is {:.2f}%, loss is {}".format(epoch,
-#               accuracy_epoch*100, loss_epoch))
-
-#         # save model
-#         global_step.assign(epoch).eval()
-#         saver.save(sess, "./cnn.ckpt", global_step=global_step)
+    # run mini batch SGD
+    for epoch in range(1,21,1): # run for 20 loops
+        # train model (neural network)
+        for batch in range(n_batch):
+            # get data batch by batch
+            batch_x = train_images[batch * BATCH_SIZE : (batch+1) * BATCH_SIZE]
+            batch_y = train_labels[batch * BATCH_SIZE : (batch+1) * BATCH_SIZE]
+            # run trainning
+            sess.run(train_step, feed_dict={x:batch_x, y:batch_y,
+                     keep_prob:0.5})
+    
+        # show accuracy for every epoch
+        loss_epoch = sess.run(loss, feed_dict={x: valid_images,
+                                               y: valid_labels,
+                                               keep_prob: 0.5})
+        accuracy_epoch = sess.run(accuracy, feed_dict={x:valid_images,
+                                                       y:valid_labels,
+                                                       keep_prob: 0.5})
+        print("Epoch {}: accuracy is {:.2f}%, loss is {}".format(epoch,
+              accuracy_epoch*100, loss_epoch))
+        # save model
+        global_step.assign(epoch).eval()
+        saver.save(sess, "./cnn.ckpt", global_step=global_step)
 
 
 #! Tesing 1 single image =======================================================
-def getTestPicArray(filename):
-    im = Image.open(filename)
-    im_arr = np.array(im.convert('L'), dtype=np.float32)
-    nm = im_arr.reshape((1, 784))
+def get_test_picture(filename):
+    image_origin = Image.open(filename)
+    width = 28 # width of destination image
+    height = 28 # height of destination image
+    image_resized = image_origin.resize((width, height), Image.ANTIALIAS)
+    im_arr = np.array(image_resized.convert('L'), dtype=np.float32)
+    nm = im_arr.reshape((1, width*height))
     return nm
 
-def testMyPicture():
-    print("\nTesting ...")
+def recognize_digit():
+    print("\nRecognizing ...")
     with tf.Session() as sess:
         sess.run(init)
-        saver.restore(sess, "cnn.ckpt-19")  # load model
-
-        for i in [1,4,7]:
+        saver.restore(sess, "cnn.ckpt-BEST")  # load best model
+        for i in [1,4,7,8]:
         # i = "unknown"
-            testPicture = "{}.jpg".format(i)
-            oneTestx = getTestPicArray(testPicture)
-            # oneTestx = test_x[1:3,:]
-
-            conv_y_predict = y_predict.eval(feed_dict={x: oneTestx, keep_prob:1.0})
+            testPicture = "{}.jpg".format(i) # filename of handwritten picture
+            oneTestx = get_test_picture(testPicture) # load picture
+            # get the prediction
+            conv_y_predict = y_predict.eval(feed_dict={x: oneTestx, 
+                                                       keep_prob:1.0})
             test_pred = np.argmax(conv_y_predict, axis=1)
-            label_predict = np.int32(test_pred)
-
+            label_predict = np.int32(test_pred) # convert prediction number to
+                                                # integer (one-hot decoding)
             print("|- The prediction of picture {}.jpg is: {}".format(i,
-                    label_predict))
+                  label_predict))
 
-
-testMyPicture()
+recognize_digit()
