@@ -142,8 +142,12 @@ y_predict = tf.matmul(h_fc1_drop, W_fc2) + b_fc2 # result (output)
 
 #! Functions and Parametrage ===================================================
 # loss function: 损失函数以交叉熵的平均值来衡量
+# <tf.nn.softmax_cross_entropy_with_logits> will be removed in a future version
+# of TensorFlow, used <..._v2> instead
+# loss = tf.reduce_mean(
+#         tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=y_predict))
 loss = tf.reduce_mean(
-        tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=y_predict))
+        tf.nn.softmax_cross_entropy_with_logits_v2(labels=y, logits=y_predict))
 
 # gradient descent algorithm
 # train_step = tf.train.GradientDescentOptimizer(learning_rate=0.1).minimize(loss)
@@ -164,6 +168,7 @@ saver = tf.train.Saver()
 
 
 #! Training ====================================================================
+print("\nTraining ...")
 with tf.Session() as sess:
     sess.run(init) # initialize
     saver.restore(sess, "cnn.ckpt-BEST") # load saved model: choose the most 
