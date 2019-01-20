@@ -1,6 +1,7 @@
 
 # TensorFlow execices: MNIST
 # Hao BAI
+# ref: https://www.jianshu.com/p/696bde1641d8
 
 try:
     import sys
@@ -9,9 +10,11 @@ try:
 except:
     pass
 
+from PIL import Image
 import tensorflow as tf
 import pandas as pd
 import numpy as np
+import scipy as sp
 
 
 #! Preprocessing Input Data ====================================================
@@ -94,138 +97,105 @@ loss = tf.reduce_mean(
 train_step = tf.train.GradientDescentOptimizer(learning_rate=0.1).minimize(loss)
 
 
-#! Initialization ==============================================================
-init = tf.global_variables_initializer() # initialisation
-#* calculate accuracy of prediction
+#! Parametrage =================================================================
+# initialisation
+init = tf.global_variables_initializer()
+# calculate accuracy of prediction
 correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(predictions,1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
-#* saved file
-global_step = tf.Variable(0, name='global_step', trainable=False)
+# saving model
+global_step = tf.Variable(0, name='Global_Step', trainable=False)
 saver = tf.train.Saver()
 
 
 #! Train model =================================================================
-with tf.Session() as sess:
-    sess.run(init) # initialize
-    saver.restore(sess, "model.ckpt-19")  # load model if necessary
-    # if use TensorFlow implemented one-hot encoding, we need to convert its
-    # type to numpy.array
-    if one_hot_mode == 2:
-        train_labels = train_labels.eval()
-        valid_labels = valid_labels.eval()
+# with tf.Session() as sess:
+#     sess.run(init) # initialize
+#     saver.restore(sess, "model.ckpt-BEST")  # load model if necessary
+#     # if use TensorFlow implemented one-hot encoding, we need to convert its
+#     # type to numpy.array
+#     if one_hot_mode == 2:
+#         train_labels = train_labels.eval()
+#         valid_labels = valid_labels.eval()
     
-    # run mini batch SGD
-    for epoch in range(20): # run for 50 loops
-        #* at the end of each epoch, it begins backward propagation (means 
-        #* changing the weights)
-        for batch in range(n_batch):
-            #* every batch means a forward propagation is finished (all samples 
-            #* have been used to train the model)
-            # get data batch by batch
-            batch_x = train_images[batch*BATCH_SIZE:(batch+1)*BATCH_SIZE]
-            batch_y = train_labels[batch*BATCH_SIZE:(batch+1)*BATCH_SIZE]
-            # train model
-            sess.run(train_step, feed_dict={x:batch_x, y:batch_y})
+#     # run mini batch SGD
+#     for epoch in range(1,21,1): # run for 20 loops
+#         #* at the end of each epoch, it begins backward propagation (means 
+#         #* changing the weights)
+#         for batch in range(n_batch):
+#             #* every batch means a forward propagation is finished (all samples 
+#             #* have been used to train the model)
+#             # get data batch by batch
+#             batch_x = train_images[batch * BATCH_SIZE : (batch+1) * BATCH_SIZE]
+#             batch_y = train_labels[batch * BATCH_SIZE : (batch+1) * BATCH_SIZE]
+#             # train model
+#             sess.run(train_step, feed_dict={x:batch_x, y:batch_y})
     
-        # show accuracy for every epoch
-        loss_epoch = sess.run(loss, feed_dict={x: valid_images,
-                                               y: valid_labels})
-        accuracy_epoch = sess.run(accuracy, feed_dict={x:valid_images,
-                                                       y:valid_labels})
-        print("Epoch {}: accuracy is {:.2f}%, loss is {}".format((epoch+1),
-              accuracy_epoch*100, loss_epoch))
+#         # show accuracy for every epoch
+#         loss_epoch = sess.run(loss, feed_dict={x: valid_images,
+#                                                y: valid_labels})
+#         accuracy_epoch = sess.run(accuracy, feed_dict={x:valid_images,
+#                                                        y:valid_labels})
+#         print("Epoch {}: accuracy is {:.2f}%, loss is {}".format(epoch,
+#               accuracy_epoch*100, loss_epoch))
 
-        # save model to disk
-        global_step.assign(epoch).eval()
-        saver.save(sess, "./model.ckpt", global_step=global_step) 
-                                # ckpt = check point
+#         # save model to disk
+#         global_step.assign(epoch).eval()
+#         saver.save(sess, "./model.ckpt", global_step=global_step) 
+#                                 # ckpt = check point
 
 #! Testing =====================================================================
-#* load testing data
-print("\nLoading testing data ...")
-test = pd.read_csv("./data/test.csv").values
-test_x = np.array(test, dtype=np.float32)
+# print("\nLoad MNIST testing data ...")
+# test = pd.read_csv("./data/test.csv").values
+# test_x = np.array(test, dtype=np.float32)
 
-with tf.Session() as sess:
-    sess.run(init)
-    print("Loading neural network model ...")
-    saver.restore(sess, "model.ckpt-19") # load model: choose the one that has
-                                         # the best accuracy
+# with tf.Session() as sess:
+#     sess.run(init)
+#     print("Load neural network model ...")
+#     saver.restore(sess, "model.ckpt-BEST") # load model: choose the one that has
+#                                          # the best accuracy
 
-    y_predict = predictions.eval(feed_dict={x: test_x[1:100, :]})
+#     y_predict = predictions.eval(feed_dict={x: test_x[1:100, :]})
 
-    y_preditct_all = list()
+#     y_preditct_all = list()
 
-    for i in np.arange(100, 8001, 100):
-        y_predict = predictions.eval(feed_dict={x: test_x[i - 100:i, :]})
-        test_pred = np.argmax(y_predict, axis=1)
-        y_preditct_all = np.append(y_preditct_all, test_pred)
+#     for i in np.arange(100, 8001, 100):
+#         y_predict = predictions.eval(feed_dict={x: test_x[i - 100:i, :]})
+#         test_pred = np.argmax(y_predict, axis=1)
+#         y_preditct_all = np.append(y_preditct_all, test_pred)
 
-    submission = pd.DataFrame({"ImageId": range(1, 8001),
-                               "Label": np.int32(y_preditct_all)})
-    submission.to_csv("submission.csv", index=False)
+#     submission = pd.DataFrame({"ImageId": range(1, 8001),
+#                                "Label": np.int32(y_preditct_all)})
+#     submission.to_csv("submission.csv", index=False)
 
-    print("Testing is finished !")
+#     print("Testing is finished !")
 
 
 #! Tesing 1 single image =======================================================
-# import scipy as sp
-# from PIL import Image
+def get_test_picture(filename):
+    image_origin = Image.open(filename)
+    width = 28  # width of destination image
+    height = 28  # height of destination image
+    image_resized = image_origin.resize((width, height), Image.ANTIALIAS)
+    im_arr = np.array(image_resized.convert('L'), dtype=np.float32)
+    nm = im_arr.reshape((1, width*height))
+    return nm
 
-# def getTestPicArray(filename):
-#     im = Image.open(filename)
-#     # x_s = 28
-#     # y_s = 28
-#     # out = im.resize((x_s, y_s), Image.ANTIALIAS)
-    
-#     im_arr = np.array(im.convert('L'), dtype=np.float32)
+def recognize_digit():
+    print("\nRecognizing ...")
+    with tf.Session() as sess:
+        sess.run(init)
+        saver.restore(sess, "model.ckpt-BEST")  # load best model
+        for i in [1, 4, 7, 8]:
+            # i = "Untitled"
+            testPicture = "{}.jpg".format(i)  # filename of handwritten picture
+            oneTestx = get_test_picture(testPicture)  # load picture
+            y_predict = predictions.eval(feed_dict={x: oneTestx}) # predict the
+                                                                  # digit
+            test_pred = np.argmax(y_predict, axis=1) # get the one that has the
+                                                     # largest probability
+            label_predict = np.int32(test_pred)
+            print("|- The prediction of picture {}.jpg is: {}".format(i,
+                  label_predict))
 
-#     # num0 = 0
-#     # num255 = 0
-#     # threshold = 100
-
-#     # for x in range(x_s):
-#     #     for y in range(y_s):
-#     #         if im_arr[x][y] > threshold:
-#     #             num255 = num255 + 1
-#     #         else:
-#     #             num0 = num0 + 1
-
-#     # if(num255 > num0):
-#     #     print("convert!")
-#     #     for x in range(x_s):
-#     #         for y in range(y_s):
-#     #             im_arr[x][y] = 255 - im_arr[x][y]
-#     #             if(im_arr[x][y] < threshold):
-#     #                 im_arr[x][y] = 0
-#                 #if(im_arr[x][y] > threshold) : im_arr[x][y] = 0
-#                 #else : im_arr[x][y] = 255
-#                 #if(im_arr[x][y] < threshold): im_arr[x][y] = im_arr[x][y] - im_arr[x][y] / 2
-
-#     # out = Image.fromarray(np.uint8(im_arr))
-#     # out.save(filename.split('/')[0] + '/28pix/' + filename.split('/')[1])
-#     #print im_arr
-#     nm = im_arr.reshape((1, 784))
-#     # nm = nm.astype(np.float32)
-
-#     # nm = np.multiply(nm, 1.0 / 255.0)
-    
-#     return nm
-
-# def testMyPicture() :
-#     with tf.Session() as sess:
-#         sess.run(init)
-#         saver.restore(sess, "model.ckpt-19")  # load model
-
-#         testPicture = "1.jpg"
-#         oneTestx = getTestPicArray(testPicture)
-#         # oneTestx = test_x[1:3,:]
-
-#         y_predict = predictions.eval(feed_dict={x: oneTestx})
-#         test_pred = np.argmax(y_predict, axis=1)
-#         label_predict = np.int32(y_predict)
-
-#         print("The prediction answer is: {}".format(label_predict))
-
-
-# testMyPicture()
+recognize_digit()
